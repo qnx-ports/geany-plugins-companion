@@ -1,0 +1,162 @@
+# Alpine-Maintainer: Natanael Copa <ncopa@alpinelinux.org>
+# Maintainer: Aaron Bassett <abassett@qnx.com>
+pkgname=geany-plugins
+pkgver=2.1
+pkgrel=1
+pkgdesc="Plugins for Geany"
+url="https://plugins.geany.org/"
+arch="all"
+license="GPL-3.0-or-later"
+makedepends="
+	autoconf
+	automake
+	bash
+	geany-dev
+	intltool
+	libtool
+	libxml2-dev
+	lua5.1-dev
+	python3-dev
+	vala
+	vte3-dev
+	"
+plugins="
+        $pkgname-addons
+        $pkgname-autoclose
+        $pkgname-automark
+        $pkgname-codenav
+        $pkgname-commander
+        $pkgname-defineformat
+        $pkgname-geanyctags
+        $pkgname-geanydoc
+        $pkgname-geanyextrasel
+        $pkgname-geanyinsertnum
+        $pkgname-latex
+        $pkgname-geanylua
+        $pkgname-geanymacro
+        $pkgname-geanyminiscript
+        $pkgname-geanynumberedbookmarks
+        $pkgname-geanyprj
+        $pkgname-geanyvc
+        $pkgname-lineoperations
+        $pkgname-lipsum
+        $pkgname-overview
+        $pkgname-pairtaghighlighter
+        $pkgname-pohelper
+        $pkgname-projectorganizer
+        $pkgname-sendmail
+        $pkgname-shiftcolumn
+        $pkgname-tableconvert
+        $pkgname-treebrowser
+        $pkgname-vimode
+        $pkgname-xmlsnippets
+        $pkgname-keyrecord
+        $pkgname-utils
+        $pkgname-scope
+        $pkgname-lang
+        $pkgname-lsp
+"
+depends="$plugins $pkgname-pretty-printer"
+subpackages="$pkgname-dev $pkgname-doc
+        $plugins
+	$pkgname-pretty-printer:pretty_printer
+"
+source="https://plugins.geany.org/geany-plugins/geany-plugins-$pkgver.tar.bz2
+        fix-qnx.patch	
+"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	CFLAGS="$CFLAGS -Qunused-arguments"
+	LDFLAGS="$LDFLAGS -ldl"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--libexecdir=/usr/lib \
+		--localstatedir=/var \
+		--enable-geanylua \
+		--with-lua-pkg=lua \
+		--disable-debugger
+	make
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+utils() {
+	pkgdesc="Reusable shared library used by geany-plugins"
+	mkdir -p "$subpkgdir"/usr/lib
+	mv "$pkgdir"/usr/lib/libgeanypluginutils.so* \
+		"$subpkgdir"/usr/lib/
+}
+
+_plugin() {
+	pkgdesc="$2"
+	depends="geany $3"
+	local _d
+	mkdir -p "$subpkgdir"/usr/lib/geany
+	mv "$pkgdir"/usr/lib/geany/$1.so "$subpkgdir"/usr/lib/geany/
+	cd "$pkgdir"
+	for _d in usr/*/geany-plugins/"$1"; do
+		if [ -d "$_d" ]; then
+			mkdir -p "$subpkgdir"/${_d%/*}
+			mv "$pkgdir"/$_d "$subpkgdir"/$_d
+			rmdir "$pkgdir"/${_d%/*} || true
+		fi
+	done
+}
+
+addons() { _plugin addons "Miscellaneous Addons for Geany"; }
+autoclose() { _plugin autoclose "Auto-closing features for Geany"; }
+automark() { _plugin automark "Highlights all words that match current word"; }
+codenav() { _plugin codenav "Navigate through your source code easily"; }
+commander() { _plugin commander "Control Geany using commands from a command panel"; }
+defineformat() { _plugin defineformat "Plugin to write multiline defines with aligned backslash"; }
+geanyctags() { _plugin geanyctags "Generate and query ctags files for a Geany project"; }
+geanydoc() { _plugin geanydoc "Call documentation from within Geany"; }
+geanyextrasel() { _plugin geanyextrasel "Additional features for selecting code"; }
+geanyinsertnum() { _plugin geanyinsertnum "Insert huge number ranges with small efforts"; }
+latex() { _plugin latex "LaTeX support for Geany"; }
+geanylua() { _plugin geanylua "Lua Scripting for Geany" "lua libintl" ;}
+geanymacro() { _plugin geanymacro "User defined Macros for Geany"; }
+geanyminiscript() { _plugin geanyminiscript "Geany Mini-Script filter plugin"; }
+geanynumberedbookmarks() { _plugin geanynumberedbookmarks "Provide users 10 numbered Bookmarks"; }
+geanypy() { _plugin geanypy "Provides Python3 bindings for Geany";
+	# Currently missing. Requires GTK+2.0
+	mv "$pkgdir"/usr/lib/geany/geanypy \
+		"$pkgdir"/usr/lib/geany/*.py \
+		"$subpkgdir"/usr/lib/geany/
+}
+geanyprj() { _plugin geanyprj "Alternate project management tool for Geany"; }
+geanyvc() { _plugin geanyvc "Version Control for Geany"; }
+lineoperations() { _plugin lineoperations "Assortment of simple line functions that can be applied to an open file"; }
+lipsum() { _plugin lipsum "Lorem Ipsum generator for Inserting Placeholder Text"; }
+overview() { _plugin overview "Overview over the code in a sidebar"; }
+pairtaghighlighter() { _plugin pairtaghighlighter "Finds and highlights matching HTML tag"; }
+pohelper() { _plugin pohelper "A plugin for Geany that improves the support for GetText translation files"; }
+pretty_printer() { _plugin pretty-printer "XML pretty printing plugin for Geany" "libxml2"; }
+projectorganizer() { _plugin projectorganizer "Extension of Geany's project management"; }
+sendmail() { _plugin sendmail "Send E-Mails from within Geany"; }
+shiftcolumn() { _plugin shiftcolumn "Move Blocks of Text horizontally"; }
+tableconvert() { _plugin tableconvert "Helps on converting a tabulator separated selection into a table"; }
+treebrowser() { _plugin treebrowser "Alternate file browser plugin"; }
+vimode() { _plugin vimode "A Vim mode for Geany"; }
+xmlsnippets() { _plugin xmlsnippets "Extends XML/HTML tag autocompletion provided by Geany"; }
+keyrecord() { _plugin keyrecord "Record a sequence of keystrokes and replay it"; }
+scope() { _plugin scope "Graphical GDB front-end" "geany-plugins-utils vte3" ; }
+lsp() { _plugin lsp "LSP plugin for the Geany editor"; }
+
+
+sha512sums="
+aed8998c9fd7467b08c05cdf7a066c701b8ef73917e78f674d547282513be418063f37651d2fa0d345c4fdc5b8db3371837f3498263fa73c41497beb364294c6  geany-plugins-2.1.tar.bz2
+7d16425bc2f395cb25df1fa5374cbc9f9258a8c3dd5763a512875e77191cf95aacb017e37eb0e3c948ad17f02c91997be94b9bebbc4e17a7d7258fb73ac46226  fix-qnx.patch
+"
